@@ -7,73 +7,108 @@ class StopWatch extends StatefulWidget {
 }
 
 class StopWatchState extends State<StopWatch> {
-  int? seconds = 0;
+  int? milliseconds = 0;
   Timer? timer;
-  bool isTicking = true;
+  final laps = <int>[];
+  bool isTicking = false;
   @override
-  
-
   void _onTick(Timer time) {
     setState(() {
-      seconds = seconds! + 1;
+      milliseconds = milliseconds! + 100;
     });
   }
+   void _lap() {
+      setState(() {
+        laps.add(milliseconds!);
+        milliseconds = 0;
+      });
+    }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Center(
-            child: Text(
-          'Tanzeel Ur Rehman - Stopwatch',
-          style: TextStyle(
-            color: Colors.blue,
-          ),
-        )),
+        title: Text('Stopwatch'),
       ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Text(
-            '$seconds ${_secondsText()}',
-            style: Theme.of(context).textTheme.headline5,
-          ),
-          SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              ElevatedButton(
-                style: ButtonStyle(
-                  backgroundColor:
-                      MaterialStateProperty.all<Color>(Colors.green),
-                  foregroundColor:
-                      MaterialStateProperty.all<Color>(Colors.white),
-                ),
-                child: Text('Start'),
-                onPressed: isTicking ? null : _startTimer,
-              ),
-              SizedBox(width: 20),
-              TextButton(
-                style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all<Color>(Colors.red),
-                  foregroundColor:
-                      MaterialStateProperty.all<Color>(Colors.white),
-                ),
-                child: Text('Stop'),
-                onPressed: isTicking ? _stopTimer : null,
-              ),
-            ],
-          )
+          Expanded(child: _buildCounter(context)),
+          Expanded(child: _buildLapDisplay()),
         ],
       ),
     );
   }
 
+  Container _buildCounter(BuildContext context) {
+    return Container(
+      color: Theme.of(context).primaryColor,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Text(
+            'Laps: ${laps.length + 1}',
+            style: Theme.of(context)
+                .textTheme
+                .subtitle1
+                ?.copyWith(color: Colors.white),
+          ),
+          Text(
+            _secondsText(milliseconds!),
+            style: Theme.of(context)
+                .textTheme
+                .headline5
+                ?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 20),
+          _buildControls()
+        ],
+      ),
+    );
+  }
+
+  Row _buildControls() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        ElevatedButton(
+          onPressed: isTicking
+              ? null
+              : () {
+                  timer = Timer.periodic(const Duration(milliseconds: 100), _onTick);
+                  setState(() {
+                    milliseconds = 0;
+                    isTicking = true;
+                  });
+                },
+          child: const Text('Start'),
+        ),
+        const SizedBox(width: 20),
+        ElevatedButton(
+          style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all<Color>(Colors.yellow),
+          ),
+          onPressed: isTicking ? _lap : null,
+          child: const Text('Lap'),
+        ),
+        const SizedBox(width: 20),
+        TextButton(
+          style: ButtonStyle(
+            backgroundColor: MaterialStateProperty.all<Color>(Colors.red),
+            foregroundColor: MaterialStateProperty.all<Color>(Colors.white),
+          ),
+          onPressed: isTicking ? _stopTimer : null,
+          child: const Text('Stop'),
+        ),
+      ],
+    );
+  }
+
   void _startTimer() {
-    timer = Timer.periodic(Duration(seconds: 1), _onTick);
+    timer = Timer.periodic(const Duration(milliseconds: 100), _onTick);
     setState(() {
-      seconds = 0;
+      milliseconds = 0;
       isTicking = true;
+      laps.clear();
     });
   }
 
@@ -84,7 +119,22 @@ class StopWatchState extends State<StopWatch> {
     });
   }
 
-  String _secondsText() => seconds == 1 ? 'second' : 'seconds';
+  String _secondsText(int milliseconds) {
+    final seconds = milliseconds / 1000;
+    return '$seconds seconds';
+  }
+
+  Widget _buildLapDisplay() {
+    return ListView(
+      children: [
+        for (int milliseconds in laps)
+          ListTile(
+            title: Text(_secondsText(milliseconds)),
+          )
+      ],
+    );
+  }
+
   @override
   void dispose() {
     timer?.cancel();
