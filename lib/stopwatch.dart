@@ -10,6 +10,8 @@ class StopWatchState extends State<StopWatch> {
   int? milliseconds = 0;
   Timer? timer;
   final laps = <int>[];
+  final itemHeight = 60.0;
+  final scrollController = ScrollController();
   bool isTicking = false;
   @override
   void _onTick(Timer time) {
@@ -17,12 +19,18 @@ class StopWatchState extends State<StopWatch> {
       milliseconds = milliseconds! + 100;
     });
   }
-   void _lap() {
-      setState(() {
-        laps.add(milliseconds!);
-        milliseconds = 0;
-      });
-    }
+
+  void _lap() {
+    setState(() {
+      laps.add(milliseconds!);
+      milliseconds = 0;
+    });
+    scrollController.animateTo(
+      itemHeight * laps.length,
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeIn,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +82,8 @@ class StopWatchState extends State<StopWatch> {
           onPressed: isTicking
               ? null
               : () {
-                  timer = Timer.periodic(const Duration(milliseconds: 100), _onTick);
+                  timer = Timer.periodic(
+                      const Duration(milliseconds: 100), _onTick);
                   setState(() {
                     milliseconds = 0;
                     isTicking = true;
@@ -125,13 +134,20 @@ class StopWatchState extends State<StopWatch> {
   }
 
   Widget _buildLapDisplay() {
-    return ListView(
-      children: [
-        for (int milliseconds in laps)
-          ListTile(
-            title: Text(_secondsText(milliseconds)),
-          )
-      ],
+    return Scrollbar(
+      child: ListView.builder(
+        controller: scrollController,
+        itemExtent: itemHeight,
+        itemCount: laps.length,
+        itemBuilder: (context, index) {
+          final milliseconds = laps[index];
+          return ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 50),
+            title: Text('Lap ${index + 1}'),
+            trailing: Text(_secondsText(milliseconds)),
+          );
+        },
+      ),
     );
   }
 
